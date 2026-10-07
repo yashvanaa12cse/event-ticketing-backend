@@ -39,6 +39,14 @@ docker compose exec api pytest -q
 
 The race test intentionally requires PostgreSQL because SQLite does not provide the row-level locking semantics being evaluated.
 
+
+
+## Live Deployment
+
+\- \*\*Deployed API:\*\* https://event-ticketing-backend-qzfy.onrender.com
+
+\- \*\*Swagger UI:\*\* https://event-ticketing-backend-qzfy.onrender.com/docs
+
 ## Run locally
 
 Create a PostgreSQL database and set:
@@ -52,7 +60,7 @@ Then:
 ```bash
 python -m venv .venv
 # Windows:
-.venv\\Scripts\\activate
+.venv\\\\Scripts\\\\activate
 # Linux/macOS:
 source .venv/bin/activate
 
@@ -83,12 +91,12 @@ Filters on `GET /events`:
 * `q` (search text, see below)
 * `city`
 * `category`
-* `start\_date`
-* `end\_date`
-* `min\_price`
-* `max\_price`
+* `start\\\_date`
+* `end\\\_date`
+* `min\\\_price`
+* `max\\\_price`
 * `page`
-* `page\_size`
+* `page\\\_size`
 
 Date/time query values and event start times must include a timezone offset, for example:
 
@@ -102,24 +110,24 @@ Date/time query values and event start times must include a timezone offset, for
 
 ```text
 GET /events?q=jazz
-GET /events?q=jazz\&city=Chennai\&category=music\&min\_price=100\&max\_price=1000\&page=1\&page\_size=10
+GET /events?q=jazz\\\&city=Chennai\\\&category=music\\\&min\\\_price=100\\\&max\\\_price=1000\\\&page=1\\\&page\\\_size=10
 ```
 
 * `q` combines with every other filter (AND) and with pagination.
 * The same rules as the unfiltered list apply: only `upcoming` events that have not started are returned, ordered by start time (ties broken by id so pages are stable).
 * Leading/trailing whitespace is trimmed. An empty or blank `q` is ignored, exactly as if it was not sent.
-* `%` and `\_` are matched literally, not as SQL wildcards.
-* Maximum length is 100 characters; longer values return `422 VALIDATION\_ERROR`.
-* A search with no matches returns `200` and `\[]`.
+* `%` and `\\\_` are matched literally, not as SQL wildcards.
+* Maximum length is 100 characters; longer values return `422 VALIDATION\\\_ERROR`.
+* A search with no matches returns `200` and `\\\[]`.
 * The endpoint remains public; no authentication is needed.
 * Filtering is done in PostgreSQL (`ILIKE ... ESCAPE`), never in Python.
 
-**Indexing decision.** No new index was added. A substring `ILIKE '%text%'` cannot use a normal B-tree index, and the query already narrows to upcoming events through the existing `status`/`starts\_at` indexes before the text match runs. A `pg\_trgm` GIN index would speed up very large tables, but it needs the `pg\_trgm` extension, adds write overhead, and `create\_all` would not apply it to an existing database because the project has no migrations. If the events table grows large, add it manually:
+**Indexing decision.** No new index was added. A substring `ILIKE '%text%'` cannot use a normal B-tree index, and the query already narrows to upcoming events through the existing `status`/`starts\\\_at` indexes before the text match runs. A `pg\\\_trgm` GIN index would speed up very large tables, but it needs the `pg\\\_trgm` extension, adds write overhead, and `create\\\_all` would not apply it to an existing database because the project has no migrations. If the events table grows large, add it manually:
 
 ```sql
-CREATE EXTENSION IF NOT EXISTS pg\_trgm;
-CREATE INDEX ix\_events\_title\_trgm ON events USING gin (title gin\_trgm\_ops);
-CREATE INDEX ix\_events\_description\_trgm ON events USING gin (description gin\_trgm\_ops);
+CREATE EXTENSION IF NOT EXISTS pg\\\_trgm;
+CREATE INDEX ix\\\_events\\\_title\\\_trgm ON events USING gin (title gin\\\_trgm\\\_ops);
+CREATE INDEX ix\\\_events\\\_description\\\_trgm ON events USING gin (description gin\\\_trgm\\\_ops);
 ```
 
 ### Organizer
@@ -139,7 +147,7 @@ An organizer can only access their own events. An event with bookings cannot be 
 * `GET /bookings/my`
 * `POST /bookings/{id}/cancel`
 
-Bookings can be cancelled only at least 24 hours before the event. The window is configurable through `CANCELLATION\_WINDOW\_HOURS`.
+Bookings can be cancelled only at least 24 hours before the event. The window is configurable through `CANCELLATION\\\_WINDOW\\\_HOURS`.
 
 ## Example registration
 
@@ -162,9 +170,9 @@ If two attendees attempt to buy the last seat concurrently:
 2. Transaction B waits for that row lock.
 3. A checks capacity, creates its booking, decreases remaining capacity, and commits.
 4. B obtains the lock and re-checks the now-current capacity.
-5. B receives `409 INSUFFICIENT\_CAPACITY` if no seats remain.
+5. B receives `409 INSUFFICIENT\\\_CAPACITY` if no seats remain.
 
-Therefore the capacity check and decrement cannot race each other. The automated test `tests/concurrency\_test.py::test\_concurrent\_last\_seat` verifies exactly one successful booking and one `409` for a one-seat event.
+Therefore the capacity check and decrement cannot race each other. The automated test `tests/concurrency\\\_test.py::test\\\_concurrent\\\_last\\\_seat` verifies exactly one successful booking and one `409` for a one-seat event.
 
 ## Security
 
@@ -184,7 +192,7 @@ Application errors use:
 
 ```json
 {
-  "code": "INSUFFICIENT\_CAPACITY",
+  "code": "INSUFFICIENT\\\_CAPACITY",
   "message": "Not enough seats remaining"
 }
 ```
@@ -193,26 +201,26 @@ Validation errors use:
 
 ```json
 {
-  "code": "VALIDATION\_ERROR",
+  "code": "VALIDATION\\\_ERROR",
   "message": "Request validation failed"
 }
 ```
 
 Common codes:
 
-* `EMAIL\_EXISTS`
-* `INVALID\_CREDENTIALS`
-* `INVALID\_TOKEN`
-* `VALIDATION\_ERROR`
+* `EMAIL\\\_EXISTS`
+* `INVALID\\\_CREDENTIALS`
+* `INVALID\\\_TOKEN`
+* `VALIDATION\\\_ERROR`
 * `FORBIDDEN`
-* `EVENT\_NOT\_FOUND`
-* `EVENT\_UNAVAILABLE`
-* `EVENT\_STARTED`
-* `INSUFFICIENT\_CAPACITY`
-* `EVENT\_HAS\_BOOKINGS`
-* `BOOKING\_NOT\_FOUND`
-* `BOOKING\_NOT\_ACTIVE`
-* `CANCELLATION\_WINDOW\_CLOSED`
+* `EVENT\\\_NOT\\\_FOUND`
+* `EVENT\\\_UNAVAILABLE`
+* `EVENT\\\_STARTED`
+* `INSUFFICIENT\\\_CAPACITY`
+* `EVENT\\\_HAS\\\_BOOKINGS`
+* `BOOKING\\\_NOT\\\_FOUND`
+* `BOOKING\\\_NOT\\\_ACTIVE`
+* `CANCELLATION\\\_WINDOW\\\_CLOSED`
 * `CONFLICT`
 
 ## Project documentation
